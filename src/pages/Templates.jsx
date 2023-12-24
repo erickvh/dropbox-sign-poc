@@ -3,7 +3,13 @@ import { Badge, Button, Col, Row, Table } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.css"; // Importing Bootstrap styles
 import { NavLink } from "react-router-dom";
 import Sign from "../components/hello-sign.component";
-import { FaFileUpload, FaPenFancy } from "react-icons/fa";
+import {
+  FaFileUpload,
+  FaList,
+  FaPenFancy,
+  FaSign,
+  FaTrash,
+} from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -11,16 +17,15 @@ export const TemplatesPage = () => {
   const [templates, setTemplates] = useState([]);
   const [editUrl, setEditUrl] = useState(null);
 
+  const fetchTemplates = async () => {
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/esignatures/listTemplates`
+    );
+    const data = await response.json();
+
+    setTemplates(data);
+  };
   useEffect(() => {
-    const fetchTemplates = async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/esignatures/listTemplates`
-      );
-      const data = await response.json();
-
-      setTemplates(data);
-    };
-
     fetchTemplates();
   }, []);
 
@@ -43,6 +48,28 @@ export const TemplatesPage = () => {
     setEditUrl(url);
   };
 
+  const handleRemoveTemplate = (templateId) => async () => {
+    const urlToRemoveTemplate = `${
+      import.meta.env.VITE_BACKEND_URL
+    }/esignatures/dropbox/templates/${templateId}`;
+
+    if (!window.confirm("Are you sure you want to remove the template?"))
+      return;
+
+    try {
+      await fetch(urlToRemoveTemplate, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      toast.success("Template removed");
+      fetchTemplates();
+    } catch (error) {
+      toast.error("Error removing template");
+    }
+  };
   const handleReplaceDoc = async (templateId) => {
     const urlToReplaceDoc = `${
       import.meta.env.VITE_BACKEND_URL
@@ -88,9 +115,7 @@ export const TemplatesPage = () => {
                 <th>Name</th>
                 <th> Roles </th>
                 <th>Custom fields</th>
-                <th>Edit template</th>
-                <th> Replace document </th>
-                <th>Signatures</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -116,6 +141,7 @@ export const TemplatesPage = () => {
 
                   <td>
                     <Button
+                      className="me-2"
                       variant="primary"
                       onClick={() => {
                         handleEditEmbededTemplate(template.templateId);
@@ -123,22 +149,28 @@ export const TemplatesPage = () => {
                     >
                       <FaPenFancy />
                     </Button>
-                  </td>
-
-                  <td>
                     <Button
                       variant="primary"
+                      className="me-2"
                       onClick={() => {
                         handleReplaceDoc(template.templateId);
                       }}
                     >
                       <FaFileUpload />
                     </Button>
-                  </td>
-                  <td>
                     <NavLink to={`${template.templateId}/send-signature`}>
-                      <Button variant="primary">Signatures</Button>
+                      <Button className="me-2" variant="primary">
+                        <FaList />
+                      </Button>
                     </NavLink>
+
+                    <Button
+                      variant="danger"
+                      className="me-2"
+                      onClick={handleRemoveTemplate(template.templateId)}
+                    >
+                      <FaTrash />
+                    </Button>
                   </td>
                 </tr>
               ))}
